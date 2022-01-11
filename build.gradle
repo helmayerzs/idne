@@ -1,0 +1,161 @@
+buildscript {
+    ext {
+        springBootVersion = "2.2.2.RELEASE"
+        springVersion = "5.2.1.RELEASE"
+        hibernateVersion = "5.4.8.Final"
+        lombokVersion = "1.18.16"
+        springCloudVersion = "Hoxton.RELEASE"
+        slf4jVersion = "1.7.26"
+        guavaVersion = "28.1-jre"
+        jacksonVersion = "2.10.0"
+    }
+
+    repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+        gradlePluginPortal()
+        jcenter()
+    }
+
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+        classpath("gradle.plugin.com.google.cloud.tools:jib-gradle-plugin:2.0.0")
+    }
+}
+
+
+apply plugin: "maven-publish"
+apply plugin: "java"
+
+apply plugin: "io.spring.dependency-management"
+
+group = "hu.idne"
+version = determineVersion()
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.boot:spring-boot-dependencies:${springBootVersion}"
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}
+
+repositories {
+    maven {
+        url "https://plugins.gradle.org/m2/"
+    }
+    gradlePluginPortal()
+    jcenter()
+}
+
+dependencies {
+    compileOnly("org.projectlombok:lombok:${lombokVersion}")
+    testCompileOnly("org.projectlombok:lombok:${lombokVersion}")
+    annotationProcessor("org.projectlombok:lombok:${lombokVersion}")
+    testAnnotationProcessor("org.projectlombok:lombok:${lombokVersion}")
+
+    runtimeOnly "org.postgresql:postgresql"
+
+    implementation 'org.flywaydb:flyway-core:6.0.7'
+
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.hibernate:hibernate-envers:${hibernateVersion}")
+
+    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-web', version: '2.2.6.RELEASE'
+    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-oauth2-resource-server', version: '2.2.6.RELEASE'
+
+    implementation("com.google.guava:guava:${guavaVersion}")
+    implementation("com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}")
+
+    implementation("io.springfox:springfox-swagger2:2.9.2")
+    implementation("io.springfox:springfox-swagger-ui:2.9.2")
+
+    implementation group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.3.4'
+
+    implementation 'io.minio:minio:6.0.12'
+    implementation("am.ik.yavi:yavi:0.2.5")
+    implementation("org.apache.commons:commons-text:1.7")
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+
+    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-mail', version: '1.2.0.RELEASE'
+    implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.12.0'
+    implementation group: 'commons-io', name: 'commons-io', version: '2.6'
+    implementation 'com.opencsv:opencsv:5.4'
+    implementation 'org.apache.poi:poi:4.1.0'
+    implementation group: 'com.opencsv', name: 'opencsv', version: '4.1'
+
+}
+
+//https://stackoverflow.com/questions/54218556/how-to-generate-jpa-metamodel-with-gradle-5-x
+
+
+dependencies{
+    annotationProcessor("org.hibernate:hibernate-jpamodelgen:${hibernateVersion}")
+}
+
+tasks.withType(JavaCompile) {
+    options.annotationProcessorGeneratedSourcesDirectory = file("src/generated/java")
+}
+
+sourceSets {
+    generated {
+        java {
+            srcDirs = ['src/generated/java']
+        }
+    }
+}
+
+sourceSets.main.java.srcDirs += "src/generated/java"
+
+configurations{
+
+    apply plugin: "application"
+    apply plugin: "com.google.cloud.tools.jib"
+
+    dependencies {
+        implementation 'io.sentry:sentry-logback:1.7.26'
+    }
+
+    jar {
+        exclude('**/application-**.properties')
+    }
+
+    jib {
+        to {
+            image = "harbor.pockitsolutions.hu/idne/${project.name.toLowerCase()}"
+            tags = [project.version]
+            auth {
+                username = "idne"
+                password = "paz4Aira"
+            }
+        }
+
+        container {
+            jvmFlags = [
+                    "-Dspring.config.location=/config/",
+                    "-Dfile.encoding=UTF-8",
+                    "-XX:+UnlockExperimentalVMOptions",
+                    "-XX:+UseCGroupMemoryLimitForHeap",
+                    "-XX:+UseG1GC",
+                    "-XX:G1NewSizePercent=20",
+                    "-XX:G1ReservePercent=20",
+                    "-XX:MaxGCPauseMillis=50",
+                    "-XX:G1HeapRegionSize=32M"
+            ]
+            ports = ["8080"]
+            creationTime = "USE_CURRENT_TIMESTAMP"
+        }
+
+        allowInsecureRegistries = true
+    }
+}
+
+
+def determineVersion() {
+    return projectEra + "-SNAPSHOT";
+}
