@@ -51,4 +51,8 @@ public class Post extends AbstractEntity<Long> {
         return id;
     }
 
+    @Override
+    public boolean hasId() {
+        return true;
+    }
 }

@@ -19,7 +19,7 @@ public class PagingAndFilterUtil {
             pageRequest.setLength(Integer.MAX_VALUE);
         }
 
-        return org.springframework.data.domain.PageRequest.of(pageRequest.getStart() / pageRequest.getLength(), pageRequest.getLength(), Sort.by(Sort.Direction.fromString(pageRequest.getDirection()),
+        return org.springframework.data.domain.PageRequest.of(pageRequest.getStart(), pageRequest.getLength(), Sort.by(Sort.Direction.fromString(pageRequest.getDirection()),
                 pageRequest.getSortedField()));
     }
 

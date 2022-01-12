@@ -29,9 +29,12 @@ public class PostPaginationController extends ExtendedPaginationController<PostP
     public PageResult<Post> page(@RequestBody ExtendedPageRequest<PostQuery> request) {
 
         if (request.getQuery() == null) {
-            return service.page(request);
+            PageResult<Post> res = service.page(request);
+            return res;
         }
-        return service.page(request, toSpecification(request.getQuery()));
+
+        PageResult<Post> res = service.page(request, toSpecification(request.getQuery()));
+        return  res;
     }
 
     @Override
